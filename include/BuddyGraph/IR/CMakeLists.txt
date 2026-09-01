@@ -1,0 +1,6 @@
+set(LLVM_TARGET_DEFINITIONS BGraphOps.td)
+mlir_tablegen(BGraphOpsEnums.h.inc -gen-enum-decls)
+mlir_tablegen(BGraphOpsEnums.cpp.inc -gen-enum-defs)
+mlir_tablegen(BGraphOpsAttributes.h.inc -gen-attrdef-decls)
+mlir_tablegen(BGraphOpsAttributes.cpp.inc -gen-attrdef-defs)
+add_mlir_dialect(BGraphOps bgraph)

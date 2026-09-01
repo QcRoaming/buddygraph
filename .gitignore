@@ -1,0 +1,7 @@
+/build/
+/.deps/
+/frontend/BGraph/models/
+/results/
+/tmp/
+__pycache__/
+*.pyc
