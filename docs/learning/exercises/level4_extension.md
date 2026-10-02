@@ -88,7 +88,7 @@ fixture。提交前先写 contract，并同时给出正例、反例、命令和�
 提交一张矩阵：每一层的代码符号、正例、反例、命令和证据路径。然后执行：
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
+cd /home/jlq/project/buddygraph
 cmake --build build --target check-buddygraph -j2
 export BUDDYGRAPH_TMP="$PWD/tmp"
 mkdir -p "$BUDDYGRAPH_TMP/level4"

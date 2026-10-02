@@ -2,13 +2,26 @@
 
 勾选前先填“我的证据”。建议把命令输出或笔记路径写在每项下方。
 
+先用[简历对齐导读](resume_alignment.md)的 L0–L4 评估。四条主线至少 L2，一个主题
+完成 L3 独立增量，是本教程的建议门槛，不是对你当前能力的判断。
+
+| 主线 | 我的等级 | 证据路径 | 尚不能解释的追问 |
+|---|---|---|---|
+| ODS、注册与方言契约 | 待自评 | 待填写 | 待填写 |
+| 前端、SSA 与 shape | 待自评 | 待填写 | 待填写 |
+| BN、CSE/DCE 与 fusion | 待自评 | 待填写 | 待填写 |
+| Conversion、bufferization 与执行 | 待自评 | 待填写 | 待填写 |
+
+证据注明：基线已有、我复盘验证、我独立新增。综合练习见
+[Square 独立增量](exercises/resume_capstone.md)。
+
 - [ ] 能从 ONNX Node 找到对应 BGraph Op。
   - 验收：任选 `generate_test_models.py` 中一个 node，指出 `_import_node()` 分支、
     生成的 op name 和 frontend FileCheck。
 - [ ] 能解释项目采用独立 CMake/build 的原因。
   - 验收：指出根 CMake 的 `find_package` 与审计中受保护的根注册文件。
-- [ ] 能准确描述项目位置，而不误称在 Buddy-MLIR 文件树之外。
-  - 验收：提交 `realpath`、两个 `git rev-parse --show-toplevel` 的输出和解释。
+- [ ] 能准确描述独立项目的位置与共享工具链边界。
+  - 验收：提交 `realpath`、BuddyGraph 和 Buddy-MLIR 的 Git 顶层输出及解释。
 - [ ] 能定位 `MLIR_DIR`、`LLVM_DIR`、`buddygraph-opt` 和下游工具。
   - 验收：从 `build/CMakeCache.txt` 和 `--version` 给出路径。
 - [ ] 能证明项目没有修改原 Buddy-MLIR 注册文件。
@@ -24,8 +37,19 @@
   - 验收：从 `BGraphOps.h` 的宏 include 追到 `Conv2DOp::verify()`。
 - [ ] 能新增一个简单 Op 的 ODS schema。
   - 验收：从已实现的 Clamp 重建 ODS contract，再在实验分支完成一个有界 schema 修改并让 TableGen target 构建。
+- [ ] 能从零接起一个独立 Dialect 的生成、library 和 driver 注册链。
+  - 验收：完成 `dialect_lab/01`，分别证明 IncGen、Dialect library 和 runtime registry。
+- [ ] 能定义并注册 parameterized custom Type。
+  - 验收：`!bglab.tag<"frontend">` round trip，指出 `GET_TYPEDEF_CLASSES/LIST` 和 `addTypes`。
+- [ ] 能判断一条规则适合 Op verifier、Trait 还是 Interface。
+  - 验收：完成 `FirstOperandAndResultSameType`，解释它与 `ForwardingOpInterface` 的职责差异。
+- [ ] 能实现 custom OpInterface 并通过 Interface 做分派。
+  - 验收：identity/mark 都实现 `getForwardedValue()`，通用代码不比较 op name。
+- [ ] 能从 Passes.td 带做一个可从 CLI 调用的 Pass。
+  - 验收：`--bglab-strip-forwarders` 出现在 `--help`，并通过 Interface 消除教学 Op。
 - [ ] 能编写 custom verifier。
-  - 验收：定位 Clamp 的 `min <= max`/finite/shape 检查并给出合法/非法命令。
+  - 验收：先定位 Clamp 检查，再在副本新增一个 invariant 或 Op verifier 并写正反测试；
+    只有阅读现有检查时记为“能解释”。
 - [ ] 能编写 negative diagnostic test。
   - 验收：`--verify-diagnostics` 测试通过且错误落在目标 op 行。
 - [ ] 能解释 verifier 与 shape inference 的区别。
@@ -44,7 +68,8 @@
 - [ ] 能判断一个 elementwise 子图是否可融合。
   - 验收：对单链和 `do_not_duplicate` 两个函数预测结果并运行验证。
 - [ ] 能编写一个 `OpConversionPattern`。
-  - 验收：逐行解释已实现的 `ClampLowering` 或 `ReluLowering` 的 adaptor/result/replacement。
+  - 验收：完成 Square 或自行定义的有界 Op 的直接 lowering，提供个人 pattern、注册、
+    结构测试与 runner 证据；解释 Relu/Clamp 仅达到阅读级。
 - [ ] 能解释 legal/illegal 和 FullConversion。
   - 验收：故意漏掉一个 pattern，得到 failed to legalize，并解释为何不应把 BGraph
     标成 legal。
@@ -66,3 +91,6 @@
     lowering 和测试，完成一个有界增量，FullConversion 后无 BGraph。
 - [ ] 能做 10 分钟项目演示。
   - 验收：按第 15 章脚本现场生成模型、展示两项优化、FullConversion 并运行结果。
+- [ ] 能接受随机深挖，不依赖演示顺序。
+  - 验收：从 interview_bank 四组各抽两题，定位源码并给出反例，再现场推导一个
+    BN/shape/indexing map，解释一次个人增量的失败定位。

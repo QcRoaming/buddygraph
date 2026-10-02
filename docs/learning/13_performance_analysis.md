@@ -1,5 +1,7 @@
 # 13｜性能与 IR 效果：如何避免漂亮但错误的结论
 
+> **本章路线：测量究竟支持什么结论。** 先分开编译、进程/JIT 时间和稳态 kernel 时间，再读结构指标与 ablation。已有数字是带范围的历史证据；读教程无需重新跑全套 benchmark。
+
 ## 1. 本章目标
 
 你将复现实测脚本，区分 compile-time、独立 runner wall time 与 kernel latency，解释
@@ -8,8 +10,8 @@ op/alloc/bytes 指标，并对五种 ablation 给出不过度外推的结论。
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 python3 scripts/benchmark.py \
   --compile-repetitions 7 \
@@ -91,6 +93,18 @@ allocator metadata、alignment、JIT code、stack 或 runtime allocations，也�
 峰值 resident memory。
 
 ## 7. 为什么这样设计
+
+### 从 fusion 推测收益时，先写假设
+
+假设三个 elementwise 运算逐个 materialize 长度 N 的 f32 结果，中间两个 tensor
+各发生一次写和一次后续读；如果融合后它们只作为 scalar 临时值，则逻辑上可消除
+`2×(读+写)×4N = 16N` bytes 的中间访问。这个估算不包含缓存命中、输入广播、编译器
+后续优化和寄存器溢出，因此是分析模型，不是本项目测得的 DRAM 流量。
+
+要检验真实 kernel 收益，需要固定硬件/线程、较有代表性的 shape，在同一进程完成
+JIT 后重复执行同一函数、检查输出并记录时间分布；再做开关 fusion 的对照。当前脚本
+主要记录新进程 wall time，不具备上述稳态计时条件。面试中能说明下一步如何改测量，
+比把历史 51.85 ms 当模型推理延迟更能体现判断力。
 
 把数值 correctness 与 timing 分开，避免抖动导致测试不稳定；用 ablation 隔离各
 Pass 的结构影响；同时记录 median/p95，避免只报最好一次。小 fixture 的主要价值是

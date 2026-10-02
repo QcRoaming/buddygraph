@@ -6,7 +6,7 @@
 
 > **教学事实边界**
 >
-> BuddyGraph 位于独立的 `buddygraph-mlir` 项目目录；原 `buddy-mlir` 是只读依赖。教学材料、练习和示例只能写入 BuddyGraph 项目。若项目复制并修改了 Buddy 源码，只讲解 `third_party/buddy-mlir/` 中的副本及其 provenance，不得要求学习者修改原 Buddy-MLIR。
+> BuddyGraph 位于独立的 `/home/jlq/project/buddygraph` 项目目录；原 `buddy-mlir` 是只读依赖。教学材料、练习和示例只能写入 BuddyGraph 项目。若项目复制并修改了 Buddy 源码，只讲解 `third_party/buddy-mlir/` 中的副本及其 provenance，不得要求学习者修改原 Buddy-MLIR。
 
 ---
 

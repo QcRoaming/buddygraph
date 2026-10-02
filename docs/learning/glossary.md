@@ -9,8 +9,9 @@
 | Dialect | 一组 op/attribute 的命名空间和注册单元 | `BGraphDialect` / `bgraph` |
 | ODS | 用 TableGen 声明 op schema 的系统 | `BGraphOps.td` |
 | TableGen | 从 `.td` 生成 C++ 声明、定义、parser/verify glue | `include/BuddyGraph/IR/CMakeLists.txt` |
-| Trait | 生成类携带的结构/语义承诺，如 `Pure`、`Terminator` | `BGraphOps.td` |
-| Interface | 可由通用算法调用的行为协议 | 当前 BGraph 未接入 shape interface |
+| Trait | 生成类携带的可组合性质/不变量；可带 `verifyTrait`，但不提供每个 Op 各自的行为分派 | BGraph 的 `Pure`/`Terminator`；专题 `FirstOperandAndResultSameType` |
+| Interface | 多个 Op 向通用算法提供统一方法的 Concept/Model 行为协议 | 当前 BGraph 未接入项目自有 interface；专题 `ForwardingOpInterface` |
+| TypeDef | 用 TableGen 定义并由 `MLIRContext` 唯一化的 Dialect Type | 当前 BGraph 无自定义 Type；专题 `!bglab.tag<"...">` |
 | Verifier | 拒绝局部不自洽的 Op；不是优化 | 各 `*Op::verify()` |
 | Shape refinement | 用 operands/attributes 收紧结果 tensor shape | `bgraph-infer-shapes` |
 | Fold hook | Op 自己提供的局部折叠入口 | 当前 **未实现** |
@@ -38,4 +39,3 @@
 | `StringRef` / `ArrayRef` | non-owning 字符/连续数据 view，调用者保证生命周期 | verifier 和 shape helpers |
 | `SmallVector` | 少量元素优先使用栈内存的 LLVM 容器 | shape、operand、attribute 计算 |
 | RAII | 作用域结束自动恢复/释放状态 | `OpBuilder::InsertionGuard` |
-

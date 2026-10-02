@@ -130,6 +130,7 @@ public:
     state.addRegion();
     auto fused = cast<FusedElementwiseOp>(rewriter.create(state));
 
+
     Region &body = fused.getBody();
     Block *block = rewriter.createBlock(&body);
     IRMapping mapping;

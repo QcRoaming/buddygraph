@@ -1,19 +1,19 @@
 # BuddyGraph 项目事实映射
 
 本文件是教程的事实入口。路径均相对于 BuddyGraph 根目录
-`/buddy-mlir/jlq/projects/buddygraph`，除非明确写成绝对路径。
+`/home/jlq/project/buddygraph`，除非明确写成绝对路径。
 
 ## 仓库、构建与工具边界
 
 | 事实 | 实际状态 | 证据/入口 |
 |---|---|---|
-| BuddyGraph 根目录 | 位于 `/buddy-mlir/jlq/projects/buddygraph`；独立构建，但不在 Buddy-MLIR 文件树之外 | 根 `CMakeLists.txt`、`realpath` |
-| BuddyGraph Git 状态 | 在 `/buddy-mlir/jlq` worktree 中是 `?? projects/buddygraph/` | `git -C /buddy-mlir/jlq status --short -- projects/buddygraph` |
+| BuddyGraph 根目录 | 位于 `/home/jlq/project/buddygraph`，在 Buddy-MLIR 文件树之外 | 根 `CMakeLists.txt`、`realpath` |
+| BuddyGraph Git 状态 | 独立 Git 仓库；修订与工作区状态以实际 checkout 为准 | `git rev-parse --show-toplevel`、`git status --short` |
 | 原 Buddy-MLIR | 只读依赖；项目未修改其注册/CMake | `docs/buddygraph/audit.md` |
-| LLVM/MLIR 依赖 | `/buddy-mlir/llvm/build`，21.0.0git | `build/CMakeCache.txt`、工具 `--version` |
+| LLVM/MLIR 依赖 | 外部 LLVM/MLIR build；原容器验证路径为 `/buddy-mlir/llvm/build` | `build/CMakeCache.txt`、工具 `--version` |
 | 独立 build | `build/` | 根 `CMakeLists.txt` |
-| `MLIR_DIR` | `/buddy-mlir/llvm/build/lib/cmake/mlir` | `build/CMakeCache.txt` |
-| `LLVM_DIR` | `/buddy-mlir/llvm/build/lib/cmake/llvm` | `build/CMakeCache.txt` |
+| `MLIR_DIR` | 外部 LLVM build 的 `lib/cmake/mlir` | `build/CMakeCache.txt` |
+| `LLVM_DIR` | 外部 LLVM build 的 `lib/cmake/llvm` | `build/CMakeCache.txt` |
 | BGraph driver | `build/bin/buddygraph-opt` | `tools/buddygraph-opt/buddygraph-opt.cpp` |
 | 原 `buddy-opt` | `/buddy-mlir/build/bin/buddy-opt`；已验证可解析第 11 章 Linalg 文件，其他 IR 仍取决于其注册 | 第 00、11 章 smoke test |
 | upstream `mlir-opt` | `/buddy-mlir/llvm/build/bin/mlir-opt`；处理其已注册的 upstream Dialect | 第 00、11 章 |
@@ -45,6 +45,19 @@
 | 评测 | `scripts/benchmark.py` | `PROFILES`、`LOWERING`、`sample()`、`static_alloc_bytes()` | 手工运行，结果见 `docs/buddygraph/results.md` |
 | Out-of-tree CMake | 根及各子目录 `CMakeLists.txt` | `find_package(MLIR CONFIG)`、`add_mlir_dialect*`、`add_mlir_library`、`add_llvm_executable` | `cmake --build build --target check-buddygraph` |
 
+## 自定义基础设施专题边界
+
+| 概念 | 当前 BGraph 基线 | 带做位置 |
+|---|---|---|
+| 自定义 Dialect/Op | 已实现 `bgraph` 与全部业务 Op | `dialect_lab/01_custom_dialect.md`、`02_custom_op.md` 从零重建接线 |
+| 自定义 TypeDef | 未实现；业务 IR 复用 builtin tensor | `dialect_lab/03_custom_type.md` 的 `!bglab.tag<"...">` |
+| 项目自有 Trait | 未实现；使用 upstream Traits | `dialect_lab/04_custom_trait.md` |
+| 项目自有 OpInterface | 未实现 | `dialect_lab/05_custom_interface.md` |
+| 自定义 Pass | 已实现四个 BGraph passes | `dialect_lab/06_custom_pass.md` 从 Passes.td 带做到 CLI |
+
+`bglab` 是学习者在实验副本中实现的教学 Dialect，不属于当前源码、ONNX 支持表或
+14/14 基线。专题教程的职责是给出逐文件实现和验收闭环，不把规划功能写成已实现事实。
+
 ## 实际 Pass
 
 | CLI 名称 | TableGen def | 实现类/入口 |
@@ -73,7 +86,7 @@
 
 | 规划/教学期望 | 真实状态 | 教学处理 |
 |---|---|---|
-| 根目录位于 Buddy-MLIR 之外 | 物理路径在 `/buddy-mlir` 内，但 CMake/build/driver 隔离 | 明确称“独立构建”，不称“外部 checkout” |
+| 根目录位于 Buddy-MLIR 之外 | 当前物理路径为 `/home/jlq/project/buddygraph`；CMake/build/driver 也隔离 | 明确区分源码独立与共享 LLVM/MLIR 工具链 |
 | `docs/toolchain.md`、toolchain CMake | 未实现 | 直接讲根 CMake 和 Cache |
 | 自定义 `InferTypeOpInterface` | 未接入任何 BGraph Op | 讲当前 Module pass，并把 Interface 作为扩展 |
 | 自定义 `fold()` | 未实现 | 第 07 章明确区分“缺失的 fold hook”和已有 canonicalization |

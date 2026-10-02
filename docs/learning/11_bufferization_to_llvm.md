@@ -1,5 +1,7 @@
 # 11｜从 tensor/Linalg 到 MemRef、LLVM Dialect 与 LLVM IR
 
+> **本章路线：从值语义到内存执行。** 先看 DPS destination，再用旧值仍被读取的例子理解原地冲突，最后追 loops、descriptor、LLVM 与入口 ABI。输出文件能运行不等于完成长期 runtime 内存管理。
+
 ## 1. 本章目标
 
 你将保存 Linalg、bufferized、LLVM Dialect 和 LLVM IR 四个真实文件，解释
@@ -8,8 +10,8 @@ destination-passing style、allocation 和 runner ABI，并指出当前 dealloca
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 
 build/bin/buddygraph-opt \
@@ -145,6 +147,75 @@ external models；若承诺 interface 却未注册，bufferization 会报 promis
 
 但项目当前仍用 `buddygraph-opt` 承载完整后续 pipeline，因为它已经注册必要 passes
 和 bufferization interfaces。
+
+### 用旧值仍被读取的例子理解原地冲突
+
+考虑下面两段语义示意，`insert` 创建一个新 tensor Value，并不修改旧 Value 的数学内容：
+
+```text
+A：t1 = insert(t0, index=0, value=9); return t1
+B：t1 = insert(t0, index=0, value=9); old = extract(t0, 0); return t1, old
+```
+
+A 中若 t0 对应可写 buffer、没有其他 alias 冲突，t1 有机会复用它。B 中若同样原地
+写入，old 就从旧值变成 9，违反 tensor 值语义；分析必须保住旧内容，常见结果是另
+分配并复制到新 buffer 后再写。具体是否复用还受可写性、alias 和分析顺序等因素影响，
+不能仅凭这一段伪代码保证精确 alloc 数。
+
+以下完整函数可保存到项目 tmp，以 `--one-shot-bufferize=bufferize-function-boundaries`
+观察；它明确保留旧 tensor 的读取：
+
+```mlir
+func.func @preserve_old(%x: tensor<4xf32>, %v: f32)
+    -> (tensor<4xf32>, f32) {
+  %c0 = arith.constant 0 : index
+  %updated = tensor.insert %v into %x[%c0] : tensor<4xf32>
+  %old = tensor.extract %x[%c0] : tensor<4xf32>
+  return %updated, %old : tensor<4xf32>, f32
+}
+```
+
+先预测哪个 load 必须看旧内容，再找输出中的 alloc/copy/load/store 及其 operand。
+对照实验删除 `%old` 与第二个 return value，并相应修改函数签名；观察 alias 关系
+变化，不要把 `rg -c memref.alloc` 作为唯一解释。
+
+本地现有工具对上述函数的实际输出包含以下顺序（省略完整类型）：
+
+```text
+alloc newBuffer
+copy x → newBuffer
+store v → newBuffer[0]
+load old ← x[0]
+return newBuffer, old
+```
+
+删掉旧值读取和第二个返回值的对照则直接 store 到参数 buffer，并返回它，没有新增
+alloc/copy。这里的差异已经用现有 executable 核对；它支持本例的因果解释，不是对所有
+函数边界配置的通用零拷贝承诺。
+
+### DPS 给候选位置，分析决定能否使用
+
+`outs(%empty)` 提供结果的 destination 候选。tensor 形式的 generic 仍返回新 Value；
+buffer 形式则通过写 destination 表达结果。elementwise 每点覆盖 output，通常无需
+读旧值；Conv/Reduce 等累加计算需要正确初始化。One-Shot 依赖 Interface 提供读写与
+alias 信息，不能从 `outs` 一个词直接推出“原地、零分配”。
+
+### descriptor、寻址与函数 ABI
+
+一般 ranked memref 的低层表示包含 allocated/aligned pointer、offset、sizes、strides。
+逻辑元素 `(i,j)` 的位置可写为 `aligned + (offset+i*stride0+j*stride1)*sizeof(element)`。
+静态 shape 允许部分信息常量化，但 memref 语义并未因此等于裸指针。
+
+`tensor<f32>` 是 rank-0 tensor，含一个元素；`f32` 是标量。E2E 中 `tensor.extract`
+把前者变成后者，才能与 `-entry-point-result=f32` 匹配。返回普通 tensor 的 compiled
+function 需要正确 wrapper/descriptor ABI，不能给 runner 换一个结果类型字符串就解决。
+
+### 每次 lowering 具体化哪项信息
+
+Linalg maps/body 具体化为循环与 load/store；SCF 结构化控制流变为 CF 分支；MemRef
+寻址变为 LLVM descriptor/指针运算；Func 与调用边界变为 LLVM 函数。最终 `.llvm.mlir`
+仍是 MLIR 文本，`.ll` 才是 LLVM IR。释放策略是另一项工程设计，当前 pipeline 没有
+完整 ownership deallocation，不应由进程运行结束反推所有 allocation 都有匹配 free。
 
 ## 7. 为什么这样设计
 

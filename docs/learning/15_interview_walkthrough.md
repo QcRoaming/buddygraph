@@ -1,5 +1,7 @@
 # 15｜面试讲解与 10 分钟现场演示
 
+> **本章路线：把实现证据组织成叙述。** 先核对个人贡献和简历事实，再做 30 秒/2 分钟/10 分钟表达。深入原理回对应章节，压力追问见 interview_bank；流畅展示只是一项验收。
+
 ## 1. 本章目标
 
 你将能完成 30 秒、2 分钟和 10 分钟三种版本的真实项目介绍，正确陈述亮点、限制、
@@ -10,10 +12,10 @@
 面试前用一条命令确认 demo 未漂移：
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
-cmake --build build --target check-buddygraph -j2
+test -x build/bin/buddygraph-opt
 build/bin/buddygraph-opt --help | rg 'bgraph-|convert-bgraph'
 ```
 
@@ -21,6 +23,9 @@ build/bin/buddygraph-opt --help | rg 'bgraph-|convert-bgraph'
 现场等待依赖安装；但现场至少重新运行一次 importer、一个 graph pass、
 FullConversion 和 runner。这里引用的是第 01 章已经给出生成命令的目录，不另设一个
 没有生成步骤的 snapshot 路径。
+
+只准备讲解时复用现有 build。修改源码或需要新的全量回归记录时，再构建实验副本
+并运行 check-buddygraph；历史 14/14 不能冒充本次执行结果。
 
 ## 3. 真实代码位置
 
@@ -55,12 +60,27 @@ FullConversion 和 runner。这里引用的是第 01 章已经给出生成命令
 演示只展示三组 diff：
 
 1. Conv→BN 变成新 constants→Conv。
-2. Add→Clamp→Mul 变成 FusedElementwise Region，再变成一个 generic。
+2. Add→Relu→Mul 变成 FusedElementwise Region，再变成一个 generic，与第 01 章
+   snapshots 保持一致。若额外讲 Clamp，另用 fusion 测试的 `@fuse_clamp` 或第 14 章 fixture。
 3. BGraph module 经 FullConversion 后 `rg 'bgraph\.'` 无输出，runner 返回 7.0。
 
 这三组分别证明：常量图优化、Region/use-def 基础设施、legality/可执行闭环。
 
 ## 6. 核心机制
+
+### 先确定第一人称陈述的个人证据
+
+先按[简历对齐导读](resume_alignment.md)校准自定义 Type、value name、CSE/DCE
+归属和 Clip 命名。下面的话术是框架，“我实现了”只用于自己确实完成且能解释的工作。
+
+| 内容 | 证据 | 表达 |
+|---|---|---|
+| 基线已有 | 源码与已有测试 | “项目包含……” |
+| 自己复盘验证 | IR 预测、输出、源码解释 | “我复盘并验证了……” |
+| 自己设计修改 | 契约、个人 diff、正反测试 | “我实现/修改了……” |
+
+专业追问会从设计理由走到反例和修改位置。[深入追问题库](interview_bank.md)按四条
+简历提供 36 题；本章末尾 20 题保留作速查。
 
 ### 30 秒介绍
 
@@ -122,7 +142,7 @@ target 隔离。当前没有副本，所以不能展示虚构 provenance。
 
 ## 8. 常见错误
 
-- 说项目位于 Buddy-MLIR 目录之外；实际只是在构建/注册上隔离。
+- 说项目完全不依赖 Buddy-MLIR；实际仍复用其 LLVM/MLIR 构建。
 - 说支持完整 ONNX、dynamic batch、groups、NHWC E2E 或 GPU。
 - 说实现了 InferTypeOpInterface/custom fold/TypeConverter；均未实现。
 - 把 Add-zero 当作无条件 IEEE identity；项目正是因 signed-zero 反例移除了这条 rewrite。
@@ -132,6 +152,12 @@ target 隔离。当前没有副本，所以不能展示虚构 provenance。
 - 10 分钟演示现场编译 LLVM 或安装依赖，浪费叙事时间。
 
 ## 9. 动手练习
+
+先脱离话术画生成/注册图、推 BN、画共享 producer 的 fusion 边界、写广播 maps、
+解释 buffer 读写冲突。任一项只能背术语，就回正文补实验。
+
+至少完成一次[独立增量](exercises/resume_capstone.md)，或展示此前确实完成的等价工作。
+现成 demo 跑出 7.0 证明环境与基线行为，不能独立证明本人写得出 lowering。
 
 录制一次 10 分钟演示。复盘时逐项检查：是否出现一个无法从文件定位的类名？是否
 把规划功能说成实现？是否在性能处给出测量范围？是否展示了至少一个 negative
@@ -143,6 +169,7 @@ condition？超时则优先删背景，不删 correctness/limits。
 - 10 分钟演示实际跑出 7.0 和 FullConversion 无 BGraph 证据。
 - 所有数字能在 `results.md` 定位，所有符号能 `rg` 到。
 - 主动陈述至少五项限制和一个真实失败案例。
+- 四条简历各能接受两轮追问；至少一项有个人修改、反例与验证证据。
 
 ## 11. 面试追问
 

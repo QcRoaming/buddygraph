@@ -1,5 +1,7 @@
 # 04｜Dialect 注册、解析与 verifier 调用链
 
+> **本章路线：认识 Op 与判断合法性。** 沿 driver→registry→Dialect→Op 的运行链，分别观察 parser、ODS 和 C++ verifier 的失败。输入 IR 在本章只被检查；下一章才追它如何从 ONNX 创建。
+
 ## 1. 本章目标
 
 你将能从 `buddygraph-opt main()` 追到 `Conv2DOp::verify()`，运行一个合法输入和至少
@@ -8,7 +10,7 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
+cd /home/jlq/project/buddygraph
 build/bin/buddygraph-opt --help | rg 'bgraph-'
 build/bin/buddygraph-opt tests/Dialect/BGraph/roundtrip.mlir -o /dev/null
 build/bin/buddygraph-opt --verify-diagnostics --split-input-file \
@@ -98,6 +100,30 @@ RankedTensorType assertion。
 `Pure` trait 不是 verifier 的替代品；它描述 side effect。`SameOperandsAndResultType`
 可提供结构级约束，但 Relu 的 f32 语义仍由 custom verifier 保证。
 
+### 沿一份错误输入区分三层
+
+假设要处理 Relu，先看下面三个故障。它们都可能表现为“工具退出”，但修复位置不同：
+
+| 输入/状态 | 为什么失败 | 应查什么 |
+|---|---|---|
+| 未加载 BGraph，遇到未知 `bgraph.*` | 工具没有相应 Op 注册信息 | driver registry 与 `initialize` |
+| Relu 没有输入却写一个结果 | 不满足 schema 的 operand 数量 | ODS/generated verifier |
+| 输入与输出均 `tensor<2xi32>` | ranked tensor 结构成立，但违反 f32 业务契约 | `ReluOp::verify/getF32Tensor` |
+
+验证有先后关系：框架先确保足以安全访问的结构，再调用相关 invariant/hook；因此不要
+为了“尽早报错”在不确定有 operand 时直接读取第一个 operand。上表用于理解错误分类，
+不是要求背诵所有 Trait/Interface 的完整内部验证次序。
+
+### verifier 不是修复器，也不是优化选择器
+
+错误静态 result shape 应被拒绝，而不是由 verifier 偷偷 `setType()`；Conv 多用户却仍
+是合法图，应交 BN Pattern 判断不命中，而不是由 Conv verifier 拒绝。判断一条规则
+放在哪里，可以问：没有开启任何优化，单独存在这个 Op 是否也不合法？若是，适合
+verifier；若只是本次替换不安全，属于 pattern 条件。
+
+练习时先预测“非法 IR”还是“合法但不优化”，再运行 `--verify-diagnostics` 或 pattern
+测试。成功退出在两种测试中含义不同，不能只截图一个 PASS。
+
 ## 7. 为什么这样设计
 
 把错误尽可能放在源 Dialect 层，诊断能使用 `input/filter/channel/layout` 等语义词，
@@ -118,6 +144,9 @@ RankedTensorType assertion。
 在纸面上设计一个新 negative case：Conv bias 长度为 3、filter output channel 为 4。
 写出预期错误文本和应放置的测试 section。若实际修改，请只编辑 BuddyGraph 的
 `tests/Dialect/BGraph/invalid.mlir`，运行单测后再恢复或提交到自己的分支。
+
+完整的“新建另一个 Dialect → 注册 → 新增 Op → generated/Trait verifier”带做见
+[自定义 Dialect 基础设施实战线](dialect_lab/README.md)。
 
 ## 10. 验收标准
 

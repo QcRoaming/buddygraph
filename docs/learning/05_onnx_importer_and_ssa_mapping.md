@@ -1,5 +1,7 @@
 # 05｜ONNX importer：从字符串名字到 MLIR SSA
 
+> **本章路线：从名字到数据边。** 先用不同的 node name/output name 跟踪一张图，再解释 constants、attributes 和 types 的来源，最后检查拒绝边界。第 06 章继续追同一个 Add 的 shape。
+
 ## 1. 本章目标
 
 你将能从一个 ONNX Node 追到具体 BGraph Operation，解释 graph input、initializer
@@ -8,8 +10,8 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP/buddygraph-importer"
 export PYTHONPATH="$PWD/.deps:/buddy-mlir/llvm/build/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
 
@@ -87,7 +89,8 @@ main(argv)
 ONNX 里的名字是字符串：
 
 ```text
-node Conv inputs=["x", "w", "conv_bias"] outputs=["conv"]
+node.name="conv_node_17", op_type="Conv"
+inputs=["x", "w", "conv_bias"], outputs=["features"]
 ```
 
 MLIR 中变成 def-use 连接：
@@ -95,16 +98,19 @@ MLIR 中变成 def-use 连接：
 ```mlir
 %w = arith.constant ... loc("initializer:w")
 %bias = arith.constant ... loc("initializer:conv_bias")
-%conv = "bgraph.conv2d"(%arg0, %w, %bias) {...}
-    : (...) -> tensor<1x4x5x5xf32> loc("conv")
+%0 = "bgraph.conv2d"(%arg0, %w, %bias) {...}
+    : (...) -> tensor<1x4x5x5xf32> loc("conv_node_17")
 ```
 
 `self.values["x"]` 指向 entry `BlockArgument`，`self.values["w"]` 指向 constant
-result，`self.values["conv"]` 指向 Conv result。后续 BN 输入名 `conv` 查到的就是同一
-SSA Value。
+result，`self.values["features"]` 指向 Conv result。后续 BN 输入名 `features` 查到的
+就是同一 SSA Value。`conv_node_17` 是节点标签，进入 Location；`%0` 是打印名称，
+不作为该 Python map 的键。此处故意用三个不同名字，以免把三种身份混在一起。
 
 Reshape shape 和 ReduceMean axes 是 integer initializer，但不会变成 runtime tensor
-operand；`_shape_initializers()` 把它们转成 BGraph DenseI64ArrayAttr。
+operand；`_node_attribute_initializers()` 识别当前 node 的元数据输入，
+`_constant_ints()` 读取整数，分支通过 `_i64_array()` 转成 BGraph DenseI64ArrayAttr。
+Clip 的 min/max 则由 `_constant_scalar_f32()` 检查并转为 FloatAttr。
 
 ## 6. 核心机制
 
@@ -119,6 +125,41 @@ shape 的来源不是 importer 自己手算每个中间值，而是 ONNX shape i
 Location 使用 node name：初始化常量是 `initializer:<name>`，node 是
 `_node_label()`。序列化时必须 `enable_debug_info=True`，否则 location 会被打印器
 省略。
+
+### 手工执行一次 importer：两个表，不是一张字典
+
+假设图为 `x,bias → Add → sum → Relu → activated`。令 x 的 shape 为 `[2,1]`，
+bias 为 `[1,3]`，结果广播为 `[2,3]`；第 06 章继续用这组 shape。
+按 `import_module()` 的顺序填写：
+
+| 时刻 | `self.values` 增加什么 | 类型从哪里来 |
+|---|---|---|
+| 建立 entry block | `x → %arg0` | graph input 的 TensorInfo |
+| 导入 initializer | `bias → constant.result` | initializer dtype/dims 与 DenseElementsAttr |
+| 创建 Add | `sum → add.result` | ONNX inference 提供 `sum: [2,3]` |
+| 创建 Relu | `activated → relu.result` | ONNX inference 提供 `activated: [2,3]` |
+| 创建 return | 无新名字，查 `activated` | 函数输出类型约束 |
+
+创建 Add 时 operands 用 `_value("x")` 和 `_value("bias")`，result type 用
+`_tensor_type("sum")`。前者连接 IR 中的定义，后者查询编译期 shape；Python 没有在这里
+执行一次 Add 去测量输出大小。若把 Relu 放在 Add 前，读取 sum 时失败，这是拓扑顺序
+契约，不是 SSA printer 编号出了问题。
+
+### 元数据的过滤必须按节点发生
+
+同一个 scalar initializer `limit` 可以在 Clip 中作为 bound 属性，又在 Add 中作为
+广播 operand。`_attribute_initializers()` 汇总分类，帮助检查允许的 initializer 类型；
+`_import_node()` 组装 operands 时使用当前 node 的 `_node_attribute_initializers()`。
+若把汇总集合用于所有 node 的 operands 过滤，Add 会丢失输入。
+
+float initializer 仍可能先被导入成 `arith.constant`；某个 node 不把它用作 operand，
+不等于整个 module 绝不出现那条 constant。无用常量之后可由清理 pass 删除。
+
+### 导入器写完以后，验证链还没结束
+
+依次检查 ONNX 协议/shape、generic MLIR 结构、C++ BGraph 语义、后端支持条件。
+`allow_unregistered_dialects` 只影响创建/解析能力，不替你确认 channel、broadcast、
+bound 或 Region 语义。第 06 章用同一个 Add 展示这几层 shape 判断为何不互相替代。
 
 ## 7. 为什么这样设计
 

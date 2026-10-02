@@ -1,5 +1,7 @@
 # 12｜lit、FileCheck 与分层调试
 
+> **本章路线：把症状定位到第一处原因。** 先按构建/解析/验证/改写/执行分层，再选择对应测试与 IR checkpoint。阅读本章后应能解释一个测试排除了什么错误，而不只是得到 PASS。
+
 ## 1. 本章目标
 
 你将能单独运行一条 lit 测试，读懂 substitutions 和 FileCheck 顺序，使用 IR dump、
@@ -9,8 +11,8 @@ timing、diagnostic verification 和 debugger 定位 verifier、rewrite、conver
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 
 /usr/bin/python3.10 /buddy-mlir/llvm/build/bin/llvm-lit -sv \
@@ -116,6 +118,27 @@ gdb --args build/bin/buddygraph-opt \
 
 ## 7. 为什么这样设计
 
+### 先说一个测试排除了什么错误
+
+| 测试 | 排除的错误 | 仍不能证明什么 |
+|---|---|---|
+| parse/round-trip | 注册、schema、文本表示接线 | 数值正确 |
+| verify-diagnostics | 指定非法输入被按预期拒绝 | 所有非法输入都被覆盖 |
+| FileCheck 优化后结构 | 某条 pattern 命中/某个 Op 残留 | scalar 计算完全正确 |
+| FullConversion 正反例 | target legality 与支持边界 | 所有 maps 都访问正确元素 |
+| runner 对拍 | 已覆盖输入上的数值一致 | 全输入证明与真实模型加速 |
+
+`CHECK-NOT` 只检查相邻正匹配之间的区间；如果要禁止整个函数出现 BGraph，需用
+函数 label/return 等边界合理覆盖，或在整体输出上另做检查。只检查“出现 fused Op”
+还不足以证明指定 Clamp/Square 确实进入 body，需检查内部 scalar 运算与 source 残留。
+
+### 数值错误怎样逐步缩小
+
+固定同一个输入，先确认 reference 与优化关闭路径一致，再逐个启用 BN、canonicalize/CSE、
+fusion。找到首个差异后保存该配置的 IR，缩到一个 op/一条链，比较属性、dtype、maps
+和 scalar body。正常数值、NaN、Inf、signed zero 分开判定；不能用普通误差阈值覆盖
+所有特殊值。修复后同时保留结构与数值回归，防止未来因为优化不再命中而“意外通过”。
+
 测试按 Dialect、Conversion、Frontend、E2E 分层，使语法/合法性错误不必等到 runner
 才发现。FileCheck 只绑定语义关键结构，避免 SSA 编号和打印格式小变化造成脆弱测试。
 
@@ -195,8 +218,8 @@ python3 "$tmpdir/onnx_elementwise_bad_reference.py" \
 问题是 reference/model mismatch，不是 BN/fusion bug；正式测试未被修改。
 
 高级可选：在自己的临时分支中移除 driver 的 `BGraphDialect` 注册或
-`registerPasses()`，分别观察 parse 与 CLI 失败。由于项目当前未跟踪，务必先复制
-文件或手工记录精确改动，不使用 destructive Git 命令恢复。
+`registerPasses()`，分别观察 parse 与 CLI 失败。务必先保存基线版本或复制
+文件，不使用 destructive Git 命令恢复。
 
 ## 10. 验收标准
 
@@ -217,3 +240,6 @@ legality，而不是把 source Dialect 改 legal。
 
 答：FileCheck 证明结构，不能证明 constants、公式、ABI 与整个 lowering 的数值语义；
 E2E 用 NumPy 同时验证优化关闭和开启路径。
+
+如果需要从 Passes.td、generated base、factory、registration 一直带做到 CLI/lit，见
+[自定义 Dialect 专题第 06–07 章](dialect_lab/README.md)。

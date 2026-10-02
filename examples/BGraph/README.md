@@ -5,8 +5,8 @@ tensor 的 Add → Relu → Mul，并用 `tensor.extract` 取下标 3 的元素�
 入口返回值。
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 build/bin/buddygraph-opt \
   --bgraph-fuse-elementwise \

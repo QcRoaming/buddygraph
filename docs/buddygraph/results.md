@@ -1,5 +1,8 @@
 # Results
 
+下面的测量命令记录 2026-07-28 采集时的旧目录。项目已迁至
+`/root/projects/buddygraph`；新运行请使用项目根 README 中的路径。
+
 ## 完成范围
 
 已完成固定 ONNX opset 18 → BGraph → Linalg/Tensor → bufferized loops → LLVM dialect

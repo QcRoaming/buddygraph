@@ -1,5 +1,7 @@
 # 08｜PatternRewriter 与 Conv-BN folding
 
+> **本章路线：从公式到合法图改写。** 先推 BN 公式，再把各参数对应到源码；随后检查常量、layout、use-count，最后追 replacement 与 erase。数学条件、图条件、浮点限制需要分别说明。
+
 ## 1. 本章目标
 
 你将按十个步骤解释真实 BN Pattern，手算新 weight/bias，验证正向和至少五个不命中
@@ -8,8 +10,8 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 build/bin/buddygraph-opt --bgraph-fold-bn-into-conv \
   tests/Dialect/BGraph/fold-bn.mlir | \
@@ -130,6 +132,47 @@ weight/bias，E2E 因而按 `1e-6` 容差验证数值，不承诺逐 bit 等价�
 
 `replaceOp` 重定向 BN 的所有 uses，`eraseOp(conv)` 只在旧 Conv result 已因 single-use
 且 BN 被替换后无用户时合法。
+
+### 从两条算式推导出改写，而不是先记新权重
+
+对输出 channel c，把输入卷积加 bias 记作
+`y_c = Σ(W_c * x) + b_c`。推理态 BN 为
+`z_c = gamma_c * (y_c - mean_c) / sqrt(var_c + epsilon) + beta_c`。
+先定义与 x 无关的 `alpha_c`，再代入：
+
+```text
+z_c = alpha_c * [Σ(W_c*x) + b_c - mean_c] + beta_c
+    = Σ((alpha_c*W_c)*x) + alpha_c*(b_c-mean_c) + beta_c
+```
+
+因为 alpha 按输出 channel 固定，才能在编译时预乘该 channel 的全部 kernel 元素。
+源码的 `valuesPerChannel` 对应这层索引划分。若 scale/variance 由运行时输入决定，
+alpha 就不是编译期常量，不能生成固定新 filter。
+
+### 为什么单用户检查是图条件
+
+```text
+原图： x → Conv(W,b) ─┬→ BN → consumer A
+                     └→ consumer B
+```
+
+若把旧 Conv 的 W/b 直接改成折叠参数，consumer B 也会看见 BN 后的值，语义改变。
+当前实现选择不命中；不是 Conv/BN 本身非法。另一个设计是为 A 新建 Conv 并保留旧
+Conv 给 B，但那会增加卷积计算，必须评估收益；本项目没有成本模型自动做此选择。
+
+### 把改写划成检查、构造、提交三段
+
+检查段只读取 IR 与常量；本地 `SmallVector<float>` 的计算不修改原 DenseElementsAttr。
+构造段创建新常量与新 Conv；提交段 `replaceOp(batchNorm, ...)` 重定向 BN 的全部
+users，随后删除已没有用户的旧 Conv。Region/greedy driver 依赖 rewriter 跟踪修改，
+不能把它当成任意编辑完再返回 success 的装饰参数。
+
+### 浮点证据应该如何表述
+
+上面的分配律在实数域成立；实际 f32 中先预乘 W 与先卷积后缩放的舍入次序不同。
+源码还把 epsilon 转为 f32，并检查 `variance+epsilon` 为正且 finite，使折叠路径与
+直接 lowering 的常量语义对齐。这些检查不能证明任意输入逐 bit 等价。
+当前测试用例的误差与数值边界应按实际结果陈述，不要由某次零误差推出完整浮点等价证明。
 
 ## 7. 为什么这样设计
 

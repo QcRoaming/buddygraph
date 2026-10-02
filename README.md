@@ -5,9 +5,13 @@ ONNX 子集导入 `bgraph` 方言，执行 shape refinement、BatchNorm folding 
 elementwise fusion，再通过 Full Dialect Conversion 降到 Linalg、bufferize、
 LLVM dialect，并用 `mlir-runner` 在 CPU 上执行。
 
-项目位于原指导文件所在的 `jlq/projects` 目录内，不修改 Buddy-MLIR 根工程
-中已有的方言、`buddy-opt` 或用户正在进行的 Microkernel 研究改动。环境审计和
-这一选择的依据见 [Phase 0 audit](docs/buddygraph/audit.md)。
+项目有自己的 CMake 构建、工具、测试和 Git 仓库。它复用外部已构建的
+LLVM/MLIR，不修改 Buddy-MLIR 根工程中的方言、`buddy-opt` 或 Microkernel
+研究改动。原目录选址的历史依据见
+[Phase 0 audit](docs/buddygraph/audit.md)。
+
+本仓库的 WSL 工作目录约定为 `/home/jlq/project/buddygraph`。若克隆到其他
+位置，请相应调整教程中的绝对路径。
 
 ## 支持范围
 
@@ -27,22 +31,31 @@ LLVM dialect，并用 `mlir-runner` 在 CPU 上执行。
 
 ## 构建
 
-以下命令复用仓库已有的 LLVM/MLIR build：
+以下命令复用已有的 LLVM/MLIR build，只编译 BuddyGraph。先把 `LLVM_BUILD`
+设为本机现有 LLVM build 的路径；当前容器中的值是 `/buddy-mlir/llvm/build`。
+Python 依赖和 BuddyGraph 构建产物放在源码目录外；`build`、`.deps` 是指向
+外部缓存的便捷链接：
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-python3 -m pip install --target .deps -r requirements.txt
-cmake -S . -B build -G Ninja \
-  -DMLIR_DIR=/buddy-mlir/llvm/build/lib/cmake/mlir \
-  -DLLVM_DIR=/buddy-mlir/llvm/build/lib/cmake/llvm \
+cd /home/jlq/project/buddygraph
+LLVM_BUILD=/path/to/existing/llvm/build
+BUDDYGRAPH_CACHE="${BUDDYGRAPH_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/buddygraph}"
+mkdir -p "$BUDDYGRAPH_CACHE/deps"
+test -e .deps || ln -s "$BUDDYGRAPH_CACHE/deps" .deps
+python3 -m pip install --target "$BUDDYGRAPH_CACHE/deps" -r requirements.txt
+cmake -S . -B "$BUDDYGRAPH_CACHE/build" -G Ninja \
+  -DMLIR_DIR="$LLVM_BUILD/lib/cmake/mlir" \
+  -DLLVM_DIR="$LLVM_BUILD/lib/cmake/llvm" \
+  -DPython3_EXECUTABLE="$(command -v python3)" \
   -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target buddygraph-opt -j2
+test -e build || ln -s "$BUDDYGRAPH_CACHE/build" build
+cmake --build "$BUDDYGRAPH_CACHE/build" --target check-buddygraph -j2
 ```
 
 Python 工具运行时需要同时找到项目依赖和 MLIR bindings：
 
 ```bash
-export PYTHONPATH="$PWD/.deps:/buddy-mlir/llvm/build/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD/.deps:$LLVM_BUILD/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
 ```
 
 ## 生成、导入与验证
@@ -50,7 +63,7 @@ export PYTHONPATH="$PWD/.deps:/buddy-mlir/llvm/build/tools/mlir/python_packages/
 生成稳定的测试模型并导入：
 
 ```bash
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+export BUDDYGRAPH_TMP="$PWD/tmp"
 mkdir -p "$BUDDYGRAPH_TMP"
 python3 frontend/BGraph/generate_test_models.py "$BUDDYGRAPH_TMP/buddygraph-models"
 python3 frontend/BGraph/import_onnx.py \
@@ -71,9 +84,10 @@ build/bin/buddygraph-opt "$BUDDYGRAPH_TMP/conv_bn_relu.mlir" -o /dev/null
 
 ```bash
 cmake --build build --target check-buddygraph -j2
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+export BUDDYGRAPH_TMP="$PWD/tmp"
 mkdir -p "$BUDDYGRAPH_TMP"
-python3 scripts/benchmark.py -o "$BUDDYGRAPH_TMP/buddygraph-results.json"
+python3 scripts/benchmark.py --llvm-tools "$LLVM_BUILD/bin" \
+  -o "$BUDDYGRAPH_TMP/buddygraph-results.json"
 ```
 
 当前回归基线为 14/14。
@@ -87,9 +101,16 @@ signed-zero 回归固定 strict IEEE 边界。测量结果和不应
 
 ## 学习教程
 
+准备将项目放进简历时，先读[简历对齐与掌握标准](docs/learning/resume_alignment.md)：
+按四条项目陈述定位学习主线、校准实现范围，并用[深入追问](docs/learning/interview_bank.md)
+与独立增量检验理解。
+
 完整中文源码课程从 [docs/learning/README.md](docs/learning/README.md) 开始，包含
 项目事实映射、术语表、00–15 章、四级练习、独立答案和学习证据清单。建议先完成
 第 00 章环境与最小演示，再沿 ONNX → BGraph → Linalg → LLVM 的真实调用链学习。
+若要亲手搭建 Dialect、Op、Type、Trait、Interface 和 Pass，直接进入
+[自定义 Dialect 基础设施实战线](docs/learning/dialect_lab/README.md)；该专题只要求在
+实验副本中实现 `bglab`，不会把教学能力冒充为当前 BGraph 基线。
 
 ## 目录
 

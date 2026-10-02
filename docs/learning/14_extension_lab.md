@@ -2,6 +2,8 @@
 
 > 状态：Clamp 已实现。本章沿当前源码复盘一次真实的新 Op 全生命周期扩展，并把它作为后续扩展的模板。
 
+> **本章路线：用增量证明独立实现能力。** 先复盘已实现 Clamp 的生命周期，再在实验副本做一个有界增量。关键产物是自己写的契约、代码 diff、正反测试与调试解释，不是重跑既有 E2E。
+
 ## 1. 本章目标
 
 你将从 ONNX `Clip` 入口追到 ODS、verifier、shape refinement、canonicalization、
@@ -10,7 +12,7 @@ fusion、Linalg lowering 和数值 E2E，理解为什么“定义一个 Op”只
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
+cd /home/jlq/project/buddygraph
 export BUDDYGRAPH_TMP="$PWD/tmp"
 mkdir -p "$BUDDYGRAPH_TMP/ch14"
 export PYTHONPATH="$PWD/.deps:/buddy-mlir/llvm/build/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
@@ -141,6 +143,9 @@ initializer 中的 finite scalar f32。缺失、运行时、非标量、非有�
 - 只通过 parse test，未用 FullConversion 和 runner 证明闭环。
 
 ## 9. 动手练习
+
+若已读过 Clamp 全部实现，可做[Square 独立增量](exercises/resume_capstone.md)：
+题目固定 MLIR 层契约与验收，不预先提供整份实现。当前基线没有该 Op。
 
 不要照抄实现，按证据反向重建设计：
 

@@ -1,5 +1,5 @@
-/build/
-/.deps/
+/build
+/.deps
 /frontend/BGraph/models/
 /results/
 /tmp/

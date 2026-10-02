@@ -2,6 +2,10 @@
 
 Audit time: 2026-07-28T09:09:30Z
 
+This is the original pre-migration audit. Its `jlq/projects/buddygraph` paths
+record the 2026-07-28 location. The current standalone project root is
+`/root/projects/buddygraph`; use its top-level README for current build commands.
+
 ## Outcome
 
 The checked-in LLVM/MLIR and Buddy-MLIR builds are usable.  A minimal

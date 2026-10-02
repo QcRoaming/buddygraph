@@ -1,5 +1,7 @@
 # 07｜fold、canonicalization、CSE 与 DCE：不要混成“优化”
 
+> **本章路线：四类清理各负责什么。** 先按第 5–6 节辨认四类变化，再做第 2 节隔离实验。最后用 signed-zero 反例检验数学替换。此章明确项目 pattern 与 upstream 通用 pass 的贡献边界。
+
 ## 1. 本章目标
 
 你将用同一个临时 module 分别观察 upstream fold、BGraph canonicalization、CSE 和
@@ -11,8 +13,8 @@ dead-op deletion，证明 BuddyGraph 当前没有自定义 `fold()` hook，并�
 在项目 `tmp/` 创建 `bgraph-cleanup.mlir`：
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 cat >"$BUDDYGRAPH_TMP/bgraph-cleanup.mlir" <<'MLIR'
 module {
@@ -195,6 +197,19 @@ Pass 顺序会改变可见结果：canonicalization 先应用某个 identity pat
 也可能改变 use-count，必须用测试固定预期。测试还必须覆盖语义边界，不能只有 op count。
 
 ## 7. 为什么这样设计
+
+### 把“项目提供什么”和“框架执行什么”逐项对应
+
+| 项目提供 | MLIR 框架据此执行 | 不能因此声称什么 |
+|---|---|---|
+| Relu 等 Op 的 canonicalization pattern | greedy driver 匹配、重试、清理 | 自己实现了完整 canonicalizer |
+| Pure/副作用信息 | CSE/dead cleanup 的安全判断 | Pure 证明任意浮点替换都等价 |
+| driver 的 `registerAllPasses()` | 让 `--cse` 等 CLI 可调用 | 自己编写了通用 CSE 算法 |
+
+如需深挖框架，先只读 `/buddy-mlir/llvm/mlir/lib/Transforms/CSE.cpp` 与
+`Canonicalizer.cpp`，再按实际调用查看 greedy rewrite driver。CSE 不能把一个不支配
+使用点的 Value 当替代值；相同 op name 不代表 operands/attrs/types 或副作用相同。
+这些控制流和语义条件正是复用 upstream 的原因。
 
 方言只实现其特有等价关系，通用 fold/CSE/DCE 交给 upstream。重写通用算法会重复
 处理 regions、side effects、dominance 和 symbol 等复杂规则，也不利于维护。

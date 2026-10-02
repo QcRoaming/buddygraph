@@ -9,6 +9,7 @@
 - [Level 3：调试](level3_debugging.md)
 - [Level 4：完整扩展](level4_extension.md)
 - [第 06 章：Conv shape 手算](chapter06_shape_calculation.md)
+- [Square 综合练习：验收提示](resume_capstone.md)
 
-答案中的路径均相对于 `/buddy-mlir/jlq/projects/buddygraph`。不要将示意代码直接写进
+答案中的路径均相对于 `/home/jlq/project/buddygraph`。不要将示意代码直接写进
 TableGen 生成物。

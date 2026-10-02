@@ -1,5 +1,7 @@
 # 00｜环境、工具边界与最小演示
 
+> **本章路线：入口与产物。** 本章先确认工具与文件位置，再把手写 BGraph 降到 LLVM Dialect 并运行。输入是 examples 中的 MLIR，输出是项目 tmp 下的文件与标量 16。先看第 5 节 IR，再按第 2 节运行；第 01 章才接 ONNX。
+
 ## 1. 本章目标
 
 完成本章后，你应能用命令证明项目的真实位置和版本，解释各 optimizer、translator
@@ -8,13 +10,13 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 
 realpath .
+git rev-parse --show-toplevel
 git -C /buddy-mlir rev-parse --show-toplevel
-git -C /buddy-mlir/jlq rev-parse --show-toplevel
 
 build/bin/buddygraph-opt --version
 /buddy-mlir/build/bin/buddy-opt --version
@@ -25,9 +27,9 @@ build/bin/buddygraph-opt --version
 cmake --build build --target check-buddygraph -j2
 ```
 
-当前快照的关键输出是 `LLVM version 21.0.0git` 和 `14/14` tests passed。两个
-Git top-level 分别是 `/buddy-mlir` 与 `/buddy-mlir/jlq`；BuddyGraph 实际位于后者
-之内，所以它是独立 CMake 项目，不是物理上独立于 Buddy-MLIR 的 checkout。
+关键输出是 `LLVM version 21.0.0git` 和 `14/14` tests passed。BuddyGraph 的
+Git top-level 是 `/home/jlq/project/buddygraph`，位于 Buddy-MLIR 文件树之外；
+其 LLVM/MLIR 工具链仍来自 `/buddy-mlir/llvm/build`。
 
 运行最小例子：
 
@@ -52,7 +54,7 @@ build/bin/buddygraph-opt \
 预期输出：`1.600000e+01`。
 
 这里的文件实际位于
-`/buddy-mlir/jlq/projects/buddygraph/tmp/buddygraph-demo.llvm.mlir`。它是
+`/home/jlq/project/buddygraph/tmp/buddygraph-demo.llvm.mlir`。它是
 `buddygraph-opt -o` 生成的中间产物，不是源文件；源输入仍是
 `examples/BGraph/elementwise_main.mlir`。项目 `tmp/` 比系统临时目录更容易在 VS Code
 中查看，并由 `.gitignore` 排除；固定文件名在重复运行时会被覆盖。
@@ -124,7 +126,7 @@ rg 'llvm.func @main' "$BUDDYGRAPH_TMP/buddygraph-demo.llvm.mlir"
 
 | 目录/工具 | 教学中是否可写 | BuddyGraph 中的职责 |
 |---|---:|---|
-| `/buddy-mlir/jlq/projects/buddygraph/` | 生成教程时只写 `docs/learning/`；学习者实验可改自己的项目副本 | 项目源码、独立 build、测试和教学材料 |
+| `/home/jlq/project/buddygraph/` | 生成教程时只写 `docs/learning/`；学习者实验可改自己的项目副本 | 项目源码、独立 build、测试和教学材料 |
 | `/buddy-mlir/` 原 Buddy/LLVM 源码 | 否 | API/version 参考和既有工具链 |
 | 项目 `third_party/buddy-mlir/` | 不存在 | 若未来创建，必须有 provenance 才可修改副本 |
 | `buddygraph-opt` | 执行工具 | 唯一注册 BGraph 的 optimizer |
@@ -165,7 +167,7 @@ BuddyGraph 的 object tree；`/buddy-mlir/llvm/build` 是被复用的 LLVM/MLIR 
 - `check-buddygraph` 通过。
 - runner 输出 `1.600000e+01`。
 - 能指出 `MLIR_DIR`、`LLVM_DIR` 和表中各工具的绝对路径。
-- 能准确说出“独立构建但物理路径位于 `/buddy-mlir` 内”。
+- 能准确说出“源码与构建独立，但 LLVM/MLIR 工具链仍由 `/buddy-mlir` 提供”。
 
 ## 11. 面试追问
 

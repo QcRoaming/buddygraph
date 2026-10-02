@@ -2,10 +2,10 @@
 
 每次只注入一个故障。先保存原文件副本，记录失败，再恢复并跑全量回归。
 临时输入统一放在项目 `$BUDDYGRAPH_TMP`（即
-`/buddy-mlir/jlq/projects/buddygraph/tmp`）；开始前先创建该目录。
+`/home/jlq/project/buddygraph/tmp`）；开始前先创建该目录。
 
 ```bash
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 ```
 

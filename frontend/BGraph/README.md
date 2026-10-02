@@ -24,8 +24,8 @@ MLIR 前失败，并包含 node name。Clip bounds 只对当前 Clip 作为 attr
 float initializer 仍可被其他节点当普通 tensor operand 复用。
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP"
 python3 frontend/BGraph/generate_test_models.py "$BUDDYGRAPH_TMP/models"
 python3 frontend/BGraph/import_onnx.py \

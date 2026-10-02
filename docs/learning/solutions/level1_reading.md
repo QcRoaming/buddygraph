@@ -2,14 +2,14 @@
 
 ## 1. 工程边界
 
-当前事实不是“BuddyGraph 根目录不在 Buddy-MLIR 源码树中”。真实路径为
-`/buddy-mlir/jlq/projects/buddygraph`，所以它物理上位于 `/buddy-mlir` 之下；其 Git 顶层
-目录是 `/buddy-mlir/jlq`，而 `/buddy-mlir` 自己又是另一个 Git worktree。准确说法是：
+BuddyGraph 的真实路径为 `/home/jlq/project/buddygraph`，在 `/buddy-mlir` 文件树
+之外；`git rev-parse --show-toplevel` 返回独立项目路径。准确说法是：
 
 > BuddyGraph 是具有独立 `project()`、CMake 配置、构建目录、工具和测试目标的
-> out-of-tree MLIR 工程，但当前被放置在 `/buddy-mlir/jlq` worktree 内。
+> BuddyGraph 是独立源码与 Git 仓库、独立 CMake 配置、构建目录、工具和测试目标的
+> out-of-tree MLIR 工程，同时依赖 `/buddy-mlir/llvm/build` 的 LLVM/MLIR 包。
 
-这里的 out-of-tree 描述构建集成方式，不等价于文件系统前缀一定在 `/buddy-mlir` 外。
+这里的源码独立不等于工具链自给；构建仍需指定 `MLIR_DIR` 和 `LLVM_DIR`。
 
 ## 2. 构建与测试入口
 

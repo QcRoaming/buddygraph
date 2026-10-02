@@ -9,16 +9,18 @@
 | [Level 2](level2_modification.md) | BuddyGraph 内的小修改 | patch、lit 输出和 IR diff | 第 04、07、12 章 |
 | [Level 3](level3_debugging.md) | 可恢复的故障注入 | 诊断、根因和修复后回归 | 第 08–12 章 |
 | [Level 4](level4_extension.md) | 审计并扩展 `bgraph.clamp` | ODS→importer→lowering→测试闭环 | 第 14 章 |
+| [基础设施专题](../dialect_lab/README.md) | 从零实现 `bglab` | Dialect→Op→Type→Trait→Interface→Pass | 专题 00–07 |
 
 ## 统一规则
 
-1. 从项目根目录 `/buddy-mlir/jlq/projects/buddygraph` 执行命令。
+简历准备另有 [Square 独立增量](resume_capstone.md)，用于区分“能读现有代码”和
+“能独立编写并验证”。它在实验副本完成 MLIR 层闭环，不改变基线 ONNX 支持声明。
+
+1. 从项目根目录 `/home/jlq/project/buddygraph` 执行命令。
 2. 只修改当前 BuddyGraph 项目；不得修改 `/buddy-mlir` 中既有 Buddy/LLVM 源码。
 3. 项目没有 `third_party/buddy-mlir/`，因此不存在可修改的 Buddy 副本。
-4. Level 2–4 要求学习者在自己的 BuddyGraph 实验副本修改源码。当前目录可能未被
-   Git 跟踪，不能把 branch 或
-   `git checkout --` 当作既有恢复方案。开始前应先把实验副本纳入自己的版本控制，
-   或逐一把待改文件备份到项目外的临时目录。
+4. Level 2–4 要求学习者在自己的 BuddyGraph 实验副本修改源码。开始前应先为实验
+   副本建立可恢复的版本记录，或逐一备份待改文件；不要直接改基线工程。
 5. 每题至少保留一种证据：命令输出、IR diff、通过的测试、调试观察或设计解释。
 
 推荐每级新建自己的记录文件，例如 `notes/level1.md`；`notes/` 只是建议，不是项目测试
@@ -36,8 +38,8 @@ test -f CMakeLists.txt
 test -x build/bin/buddygraph-opt
 ```
 
-如果你选择当前 `/buddy-mlir/jlq/projects/buddygraph`，应先自行建立可恢复的版本控制或
-逐文件备份；如果选择另一个完整副本，应按[项目根 README](../../../README.md) 重新配置
+如果你选择当前 `/home/jlq/project/buddygraph`，应先保存基线版本或逐文件备份；
+如果选择另一个完整副本，应按[项目根 README](../../../README.md) 重新配置
 该副本的 `build/`。后续练习里的相对路径和 `build/bin/buddygraph-opt` 都指向这个
 `BUDDYGRAPH_LAB_ROOT`，不得一边改副本、一边误用原项目的 build。
 

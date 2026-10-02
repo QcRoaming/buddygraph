@@ -1,5 +1,7 @@
 # 01｜端到端 Pipeline：每层 IR 到底是什么
 
+> **本章路线：全链路总图。** 本章把 ONNX、BGraph、Linalg、MemRef、LLVM Dialect 串起来。先辨认每层新增/丢失的信息，再生成 snapshots。每个 pass 的实现原理在 05–11 章展开；本章先建立四条简历陈述的位置关系。
+
 ## 1. 本章目标
 
 你将保存同一模型在 BGraph、BN folding、fusion、Linalg、bufferized、LLVM Dialect
@@ -8,8 +10,8 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
-export BUDDYGRAPH_TMP=/buddy-mlir/jlq/projects/buddygraph/tmp
+cd /home/jlq/project/buddygraph
+export BUDDYGRAPH_TMP=/home/jlq/project/buddygraph/tmp
 mkdir -p "$BUDDYGRAPH_TMP/buddygraph-learning"
 export PYTHONPATH="$PWD/.deps:/buddy-mlir/llvm/build/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
 
@@ -78,6 +80,20 @@ rg -c '"bgraph\.' "$BUDDYGRAPH_TMP/buddygraph-learning/03-linalg.mlir" || true
 `01-bn.mlir` 与 `02-fused.mlir` 都直接由 `00-imported.mlir` 生成，是为了分别观察
 单个 Pass 的**兄弟分支**，不是“先 BN 再 fusion”的连续阶段；`03-linalg.mlir` 才按
 命令中列出的组合顺序执行两种优化并进入 FullConversion。
+
+按文件来源看，快照结构是下面这张树，不是按文件编号逐个读取上一步：
+
+```text
+00-imported.mlir
+├─ BN only ───────────────> 01-bn.mlir
+├─ fusion only ───────────> 02-fused.mlir
+├─ graph opts + conversion > 03-linalg.mlir
+├─ 上述 pipeline + buffer > 04-buffer.mlir
+└─ 上述 pipeline + LLVM ─> 05-llvm.mlir ──translate──> 06-llvm.ll
+```
+
+这样可以把“单个优化的影响”和“完整后端的结果”分别观察。对比文件前先写清两边的
+pipeline 差异；不要把 01 与 02 的差异全部归因于 fusion，因为 BN 配置也不同。
 
 ## 3. 真实代码位置
 

@@ -1,5 +1,9 @@
 # BuddyGraph 项目生成 Agent 执行指导
 
+> 历史指导文件：本文记录 2026-07-28 在 Buddy-MLIR 内启动项目时的要求。
+> BuddyGraph 已于 2026-10-02 迁至 `/home/jlq/project/buddygraph`，当前目录、
+> 外部缓存和构建命令以项目根 [README](../README.md) 为准。
+
 版本：1.0  
 目标读者：负责在用户现有 Buddy-MLIR 仓库中实现项目的编码 Agent  
 项目名称：BuddyGraph——基于 Buddy-MLIR 的轻量神经网络图前端与融合编译器
@@ -1022,4 +1026,3 @@ examples/BGraph/README.md
 - 关键 lowering 能够通过调试器逐步跟踪。
 
 教学价值不能以牺牲工程正确性为代价。
-

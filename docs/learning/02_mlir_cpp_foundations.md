@@ -1,5 +1,7 @@
 # 02｜从 BuddyGraph 代码学习 MLIR C++ 基础
 
+> **本章路线：对象与所有权。** 先读懂 Operation/Value/use-list，再追一次 verifier 的失败传播，最后理解 Region 构造中的 insertion point 和生命周期。这些对象关系是第 03–11 章共同的基础。
+
 ## 1. 本章目标
 
 你将能逐行解释一个 verifier helper 和一个 Region 构造片段中的 MLIR/LLVM C++
@@ -8,7 +10,7 @@
 ## 2. 先运行
 
 ```bash
-cd /buddy-mlir/jlq/projects/buddygraph
+cd /home/jlq/project/buddygraph
 rg -n 'FailureOr<|LogicalResult|SmallVector|ArrayRef|StringRef|IRMapping|InsertionGuard' \
   lib/BuddyGraph
 ```
@@ -118,6 +120,40 @@ Region 拥有 Block，Block 拥有其中的 Operations 和 block arguments，Ope
 拥有自己的 Regions/results/attributes。`Operation *`、`Value`、`ArrayRef` 都不拥有
 这些 IR；删除 op 后不能继续使用旧 wrapper/value。
 
+### 先把“替换一个 Value”画清楚
+
+设 `%a = relu(%x)`，而 `%b = add(%a, %a)`。一个 `%a` 有两个 use，尽管只有一个 user
+Operation。`hasOneUse()` 数的是操作数使用次数，不是不同 user 的数量。
+
+```text
+Relu Operation ──定义──> OpResult %a
+                           ↑           ↑
+                     Add operand 0  Add operand 1
+                           └──── Add Operation ────> %b
+```
+
+`replaceAllUsesWith(%x)` 修改的是这些 OpOperand 指向的 definition，不是给 `%a` 换文本
+名字。替换后 `%a` 没有 users，才可能删除 Relu。若直接 erase，Add 会引用不存在的定义。
+在 Pattern 中还应通过 rewriter 做这些变化，让驱动器及时更新工作队列。
+
+### typed wrapper、CRTP 与失效
+
+`OpRewritePattern<ReluOp>` 的模板参数告诉框架匹配哪种 operation，并让回调直接拿到
+typed accessor。生成的 `ReluOp` 使用 `Op<ReluOp, ...Traits>` 形式，把具体类型传回基类，
+属于 CRTP；它没有因此拥有底层 Operation。复制 `ReluOp` wrapper 成本低，但两个 wrapper
+仍指向同一个节点。节点被删除后两者都失效，不能把 wrapper 复制理解为 IR clone。
+
+阅读 `emitScalar` 时把三个问题写在旁边：这个 Value 定义在哪个 Block？当前 insertion
+point 在哪里？删除外层 Op 会不会连同它的 Region 一起销毁？这三个问题能解释不少
+“C++ 类型完全正确，生成的 SSA 却非法”的错误。
+
+### 用返回值追错误，而不是只找日志
+
+`auto tensor = getF32Tensor(...)` 的结果可能是 failure；`*tensor` 只能放在成功分支。
+helper 可能已调用 `emitOpError`，调用方再 `return failure()` 是传播失败，不需要重复
+输出相同诊断。到 Pass 最外层，失败通过 `signalPassFailure()` 交给 PassManager；
+到 Pattern，合法但不匹配通常用 `notifyMatchFailure`。二者不能互换成“都返回 false”。
+
 ## 7. 为什么这样设计
 
 MLIR 需要频繁遍历和重写大图，轻量 handle 和 arena/Context 管理能减少对象复制与
@@ -157,4 +193,3 @@ MLIR 需要频繁遍历和重写大图，轻量 handle 和 arena/Context 管理�
 
 答：它与 MLIR failure propagation、diagnostic 和 pattern driver API 一致；
 `notifyMatchFailure` 还能附带未匹配原因。
-
