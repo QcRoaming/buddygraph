@@ -22,7 +22,7 @@ LLVM/MLIR，不修改 Buddy-MLIR 根工程中的方言、`buddy-opt` 或 Microke
   Transpose、ReduceMean，以及同时提供 finite scalar f32 initializer bounds 的
   ONNX Clip/BGraph Clamp；不支持 optional、runtime 或 Constant-node bounds。
 - 优化：shape inference、Conv-BN folding、canonicalization、CSE、
-  region-based elementwise fusion。
+  region-based elementwise fusion，以及调用方输出直写、NCHW Conv 通道分块与宽度向量化。
 - 后端：Linalg/Tensor/Arith/Math → One-Shot Bufferize → loops/LLVM → CPU。
 
 这不是完整 ONNX 编译器。当前明确不支持训练态 BatchNormalization、动态或
@@ -31,32 +31,30 @@ LLVM/MLIR，不修改 Buddy-MLIR 根工程中的方言、`buddy-opt` 或 Microke
 
 ## 构建
 
-以下命令复用已有的 LLVM/MLIR build，只编译 BuddyGraph。先把 `LLVM_BUILD`
-设为本机现有 LLVM build 的路径；当前容器中的值是 `/buddy-mlir/llvm/build`。
-Python 依赖和 BuddyGraph 构建产物放在源码目录外；`build`、`.deps` 是指向
-外部缓存的便捷链接：
+已验证 LLVM/MLIR 21.1.8、Python 3.11、NumPy 1.26.4 和 ONNX 1.17.0。
+依赖准备见[轻量环境准备](docs/buddygraph/setup.md)，支持使用预编译 SDK，
+只编译 BuddyGraph 和前端需要的最小 MLIR Python bindings。
+
+以下命令在项目根目录执行。`scripts/env.sh` 默认从用户缓存加载 SDK、venv 和
+bindings；已有匹配环境时，可在 source 前设置 `LLVM_BUILD` 和
+`BUDDYGRAPH_MLIR_PYTHON_DIR`：
 
 ```bash
-cd /home/jlq/project/buddygraph
-LLVM_BUILD=/path/to/existing/llvm/build
-BUDDYGRAPH_CACHE="${BUDDYGRAPH_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/buddygraph}"
-mkdir -p "$BUDDYGRAPH_CACHE/deps"
-test -e .deps || ln -s "$BUDDYGRAPH_CACHE/deps" .deps
-python3 -m pip install --target "$BUDDYGRAPH_CACHE/deps" -r requirements.txt
-cmake -S . -B "$BUDDYGRAPH_CACHE/build" -G Ninja \
+source scripts/env.sh
+cmake -S . -B build -G Ninja \
   -DMLIR_DIR="$LLVM_BUILD/lib/cmake/mlir" \
   -DLLVM_DIR="$LLVM_BUILD/lib/cmake/llvm" \
+  -DCMAKE_PREFIX_PATH="$BUDDYGRAPH_CACHE/toolchain/usr" \
   -DPython3_EXECUTABLE="$(command -v python3)" \
+  -DBUDDYGRAPH_MLIR_PYTHON_DIR="$BUDDYGRAPH_MLIR_PYTHON_DIR" \
+  -DLLVM_EXTERNAL_LIT="$(command -v lit)" \
+  -DLLVM_LINK_LLVM_DYLIB=ON -DMLIR_LINK_MLIR_DYLIB=ON \
   -DCMAKE_BUILD_TYPE=Release
-test -e build || ln -s "$BUDDYGRAPH_CACHE/build" build
-cmake --build "$BUDDYGRAPH_CACHE/build" --target check-buddygraph -j2
+cmake --build build --target check-buddygraph -j2
 ```
 
-Python 工具运行时需要同时找到项目依赖和 MLIR bindings：
-
-```bash
-export PYTHONPATH="$PWD/.deps:$LLVM_BUILD/tools/mlir/python_packages/mlir_core${PYTHONPATH:+:$PYTHONPATH}"
-```
+`scripts/env.sh` 同时设置 Python 和动态库搜索路径。Python 依赖需要安装在同一
+解释器环境中；旧 `.deps` 中不同 Python ABI 的扩展不能混用。
 
 ## 生成、导入与验证
 
@@ -90,7 +88,7 @@ python3 scripts/benchmark.py --llvm-tools "$LLVM_BUILD/bin" \
   -o "$BUDDYGRAPH_TMP/buddygraph-results.json"
 ```
 
-当前回归基线为 14/14。
+当前回归基线为 17/17。
 
 测试包括 ODS round trip、verifier 错误、shape refinement、rewrite 正负条件、
 FullConversion、bufferization、前端拒绝路径，以及优化前/后相对 NumPy 的
@@ -98,6 +96,33 @@ FullConversion、bufferization、前端拒绝路径，以及优化前/后相对 
 signed-zero 回归固定 strict IEEE 边界。测量结果和不应
 过度解读的边界见
 [results.md](docs/buddygraph/results.md)。
+
+## CPU 性能扩展
+
+核心实现在 [CPUTransforms.cpp](lib/BuddyGraph/Transforms/CPUTransforms.cpp)：
+
+- `--bgraph-bufferize`：内联计算函数，通过空张量消除传播调用方输出，
+  接入 One-Shot Bufferization 和临时缓冲区释放，减少结果临时分配与拷贝。
+- `--bgraph-vectorize-conv="vector-width=8 channel-tile=4"`：对缓冲化后的
+  静态 f32 NCHW 卷积按输出通道分块、沿宽度向量化，让多个输出通道复用输入向量；
+  覆盖宽度和通道尾部，宽度 stride 不为 1 等情况保留标准 Linalg 路径。
+
+原生 benchmark 使用运行时张量输入，将 kernel 提前编译为共享库，在 C 循环中
+重复调用，并在计时前后与 NumPy 对拍。三组配置分别衡量图优化基线、输出直写、
+输出直写加卷积调度：
+
+```bash
+source scripts/env.sh
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+python3 scripts/benchmark_native.py --llvm-tools "$LLVM_BUILD/bin" \
+  --cpu 2 --profiles all direct_output cpu --rounds 31 --batch-ms 20 \
+  --output-dir results/cpu-extensions
+```
+
+2026-11-06 单线程实测：百万元素 Relu 链输出直写加速 1.34×；
+32×32 卷积链在输出直写基础上增加调度后，从 333.32 µs 降至 87.13 µs，
+加速 3.83×。这些数字对应固定合成用例；输入、计时范围、复测结果和原始样本见
+[性能报告第 8 节](docs/buddygraph/performance_2026-11-05.md#8-2026-11-06输出直写与卷积-cpu-调度扩展)。
 
 ## 学习教程
 
@@ -124,4 +149,5 @@ examples/BGraph/          可手工运行的最小 MLIR 示例
 docs/buddygraph/          审计、架构、设计、测试和结果
 docs/learning/             中文源码课程、练习、答案和证据清单
 scripts/benchmark.py      可复现的 compile/IR/runner 指标采集
+scripts/benchmark_native.py  排除编译与加载的原生 kernel 性能测量
 ```

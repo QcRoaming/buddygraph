@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-11-06T09:09:48.037514+08:00",
+  "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "source_sha256": {
+    "lib/BuddyGraph/Transforms/CPUTransforms.cpp": "d57591c2efdba3135316e89232a8faf02c054a4a0590805567112807a5ea042b",
+    "lib/BuddyGraph/Transforms/CMakeLists.txt": "f325edb6834b888cfbec6896d9c9d9dddd5953f6cb36b0b047600276c43d1608",
+    "include/BuddyGraph/Transforms/Passes.h": "7b05f2a5a3f272980ed2b3f318a1c3b2582b5414212121cac80be2e0b92248ab",
+    "include/BuddyGraph/Transforms/Passes.td": "3c7b097f8a5f4dac85deb1f9c74817450f2939f1999f49deb3091b66ae1675db",
+    "tools/buddygraph-opt/buddygraph-opt.cpp": "dc9c7f9dfbe1db454d3247452e46f73406de49ecf1566940be48fa3de23872d4",
+    "tools/buddygraph-opt/CMakeLists.txt": "a25b0f90ed7c37cea8b72f78a7300b53b03602a5a7ffe3785b986eb815ab6447",
+    "scripts/benchmark_native.py": "ed361a994a1106b87f3b609084082d37429b7bfa76b19522530597e819d7c6cc",
+    "tests/Conversion/BGraphToLinalg/direct-output.mlir": "978983e21acbdca7343fa10fcad62b0c3294092627de2aa84c023ac75667197b",
+    "tests/Conversion/BGraphToLinalg/vectorize-conv.mlir": "2b43ab2fe6057f5c2356a2f0eed8e28af347e893af178ec0f1415e61109bfa32",
+    "tests/E2E/BGraph/cpu_extensions.py": "72abb0523e41c56ff985e9ec0385fc936106f815bf347461afa222fd0d65dbd8"
+  },
+  "regression": {
+    "passed": 17,
+    "discovered": 17,
+    "seconds": 5.21
+  },
+  "main_profiles": [
+    "all",
+    "direct_output",
+    "cpu"
+  ],
+  "main_rounds": 31,
+  "alternate_schedule": {
+    "vector_width": 4,
+    "channel_tile": 2,
+    "rounds": 21
+  }
+}

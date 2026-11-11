@@ -42,4 +42,22 @@ def ConvertBGraphToLinalg
   ];
 }
 
+def BGraphVectorizeConv
+    : Pass<"bgraph-vectorize-conv", "::mlir::ModuleOp"> {
+  let summary = "Tile output channels and vectorize NCHW convolution width";
+  let constructor = "::buddy::bgraph::createVectorizeConvPass()";
+  let options = [
+    Option<"vectorWidth", "vector-width", "int64_t", "8",
+           "Number of adjacent output pixels per vector">,
+    Option<"channelTile", "channel-tile", "int64_t", "4",
+           "Number of output channels sharing each input vector">
+  ];
+  let dependentDialects = [
+    "::mlir::arith::ArithDialect",
+    "::mlir::memref::MemRefDialect",
+    "::mlir::scf::SCFDialect",
+    "::mlir::vector::VectorDialect"
+  ];
+}
+
 #endif // BUDDYGRAPH_TRANSFORMS_PASSES_TD

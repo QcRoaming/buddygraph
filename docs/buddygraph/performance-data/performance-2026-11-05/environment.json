@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-11-05T09:24:01.101446+08:00",
+  "source_root": "/home/jlq31/project/buddygraph/buddygraph",
+  "source_sha256": {
+    "frontend/BGraph/generate_test_models.py": "acb6e68fadfd46b7d2506464e483febc96f6ee1574de221759133e012fe29306",
+    "frontend/BGraph/import_onnx.py": "e6760e469ff95a926b5faf36cab87217fa01196968c4cecf3a06266a2851204f",
+    "include/BuddyGraph/CMakeLists.txt": "488a485d253425e1db2aee4e0725f80afce617201939e009759a898b6360c552",
+    "include/BuddyGraph/Conversion/BGraphToLinalg.h": "60ba6b45725b161cadd53e193416d3882748051c026e86b61c960f2b0209699c",
+    "include/BuddyGraph/IR/BGraphDialect.h": "992104df80e0270c69030084bbd34715ca2ed3c8568810ec4e845c4e193b180c",
+    "include/BuddyGraph/IR/BGraphDialect.td": "3e655bb7907e1e4259c01fb985f73015587cdd5fddea12c4248ac60accb255fe",
+    "include/BuddyGraph/IR/BGraphEnums.td": "b30b74e7f4640fee7db108bf652c1ede942c34c85d882eb120cb93c4f26e9cb4",
+    "include/BuddyGraph/IR/BGraphOps.h": "a83791500c2701ab9ee55fb6a94891f66452097c7321b856f1937790022bc884",
+    "include/BuddyGraph/IR/BGraphOps.td": "935809352b6f0997da41e54b2a75308841a14d9d6538dc0ae12c323a0087abce",
+    "include/BuddyGraph/IR/CMakeLists.txt": "19a9165da584eb40ebd0b65a47c5f1abf15b620fbdeb3243b6fbe1dd109659df",
+    "include/BuddyGraph/Transforms/CMakeLists.txt": "00a06372e439638ec886973e020aa4b3c7118821ac1dd7d3466c3da7dc2a68ba",
+    "include/BuddyGraph/Transforms/Passes.h": "8c88271cca349e3b22d044ff3246f859707ec0e9fb430e0977f739c94180922d",
+    "include/BuddyGraph/Transforms/Passes.td": "60827715a51d30ceec5d961f48e0e4a8731043b770c771258d5e62a7872d9aec",
+    "include/CMakeLists.txt": "43e65977bb55570bd746956f1a00bfaad29cbcc87f54f2b2ccd4235b0bdb54d2",
+    "lib/BuddyGraph/CMakeLists.txt": "eb6aea7facd37a42ea37627b2e2ad3649e53724df3582f769db1f95b030963a7",
+    "lib/BuddyGraph/Conversion/BGraphToLinalg.cpp": "8b1d9be600a2c7b1c4104b2f89f7fc1574ac613198d14b8873af1c443f68f315",
+    "lib/BuddyGraph/Conversion/CMakeLists.txt": "08ca5cf956db65102aebbff7c5ccbbb141b322090a5dc6b19871ed896f2e5095",
+    "lib/BuddyGraph/IR/BGraphDialect.cpp": "6a24fa1302c91afc62d4844d9ed1d0943fbbc7f628671b57b984fb4fa6a66bb6",
+    "lib/BuddyGraph/IR/BGraphOps.cpp": "1000d4efe233849557fd96b6c364729689df41dff9bab3b69b966b34e0912cda",
+    "lib/BuddyGraph/IR/CMakeLists.txt": "3861bb73c4615569ba7122b3d10d3772737e23f500eb8213ccec63e9f01184d4",
+    "lib/BuddyGraph/Transforms/CMakeLists.txt": "38b4b789519a02459a14804f6a31830cd97aa03ddf0ab62e49a76b99b12181d8",
+    "lib/BuddyGraph/Transforms/FoldBatchNorm.cpp": "a028ad16a646b2a0cf7b7b4dbdbfa4f7cecae16eb1652565d6900d46e7680a16",
+    "lib/BuddyGraph/Transforms/FuseElementwise.cpp": "398f7384c38ef1d3274d8b5d8b1c1c9ffe2912eec6d9dcad351c9a8c9eb6d850",
+    "lib/BuddyGraph/Transforms/InferShapes.cpp": "0d822a503a35884a1dd7b1497e4eca5bb3ca0319432e2ba8423a274cd0dca6f6",
+    "lib/CMakeLists.txt": "43e65977bb55570bd746956f1a00bfaad29cbcc87f54f2b2ccd4235b0bdb54d2",
+    "scripts/benchmark.py": "f141841e4012c7b42a24f1aa0a995cff0062746a57c9f5ed993506d905630867",
+    "scripts/benchmark_native.py": "53d747dc1f9afadf2d8be11f3b9a8ac635ca15ec9572ff22ee6b2b83249e3d0e",
+    "scripts/env.sh": "09ab45cfbc34c66324f0ce94f33d1406ed7cb6fc79b1f0d408cef3e8d01e66bb",
+    "scripts/python-bindings/CMakeLists.txt": "fdce11166613899587ab922c46cff91c8ee5d158183f246f086c6e66463fb0fb",
+    "tools/CMakeLists.txt": "00e558029798050fb6488c9dbdebefcb6c6d316cf40f0a33b8ebac4bd6b86d2f",
+    "tools/buddygraph-opt/CMakeLists.txt": "eb0289647c019ed08a0b293b7200691109206c6b7c1604839376a89e63511b55",
+    "tools/buddygraph-opt/MlirOptMain.cpp": "16174e3953f03950eab106fe7642720dbec70d677cae48f75371e7329bfbd6a7",
+    "tools/buddygraph-opt/buddygraph-opt.cpp": "b1ec4dd42da5883d5277c84083ef8c6c0775e38d17cfa30851f83d2041efbdfe",
+    "tools/buddygraph-opt/mlir-opt.cpp": "4b0d24ed32b27d738f1c9c6d6d412d59c727e4e4b4a5d0cd1d7ddc8541d68621"
+  },
+  "source_control": "Unavailable: .git is an empty regular file; no commit ID could be read.",
+  "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           39 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  16\nOn-line CPU(s) list:                     0-15\nVendor ID:                               GenuineIntel\nModel name:                              13th Gen Intel(R) Core(TM) i5-13400\nCPU family:                              6\nModel:                                   183\nThread(s) per core:                      2\nCore(s) per socket:                      8\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                4991.99\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid tsc_known_freq pni pclmulqdq vmx ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves avx_vnni vnmi umip waitpkg gfni vaes vpclmulqdq rdpid movdiri movdir64b fsrm md_clear serialize ibt flush_l1d arch_capabilities\nVirtualization:                          VT-x\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               384 KiB (8 instances)\nL1i cache:                               256 KiB (8 instances)\nL2 cache:                                10 MiB (8 instances)\nL3 cache:                                20 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-15\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Mitigation; Clear Register File\nVulnerability Retbleed:                  Mitigation; Enhanced IBRS\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI BHI_DIS_S\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected\n",
+  "memory": "               total        used        free      shared  buff/cache   available\nMem:           7.6Gi       2.1Gi       2.5Gi       5.5Mi       3.1Gi       5.5Gi\nSwap:          2.0Gi          0B       2.0Gi\n",
+  "load": " 09:24:01 up 7 min,  1 user,  load average: 0.39, 0.50, 0.30\n",
+  "build_configuration": [
+    "CMAKE_BUILD_TYPE:STRING=Release",
+    "CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG",
+    "LLVM_DIR:UNINITIALIZED=/home/jlq31/.cache/buddygraph/toolchain/usr/lib/llvm-21/lib/cmake/llvm",
+    "MLIR_DIR:UNINITIALIZED=/home/jlq31/.cache/buddygraph/toolchain/usr/lib/llvm-21/lib/cmake/mlir",
+    "Python3_EXECUTABLE:UNINITIALIZED=/home/jlq31/.cache/buddygraph/venv/bin/python"
+  ],
+  "regression": {
+    "command": "source scripts/env.sh && cmake --build build --target check-buddygraph -j2",
+    "discovered": 14,
+    "passed": 14,
+    "test_seconds": 3.16
+  },
+  "benchmark_conditions": {
+    "cpu": 2,
+    "threads": 1,
+    "frequency_locked": false,
+    "host": "WSL2 virtual machine; host activity and physical CPU placement are not controlled",
+    "environment": {
+      "LLVM_BUILD": "/home/jlq31/.cache/buddygraph/toolchain/usr/lib/llvm-21",
+      "BUDDYGRAPH_MLIR_PYTHON_DIR": "/home/jlq31/.cache/buddygraph/python-build/python_packages/mlir_core",
+      "PYTHONPATH": "/home/jlq31/.cache/buddygraph/python-build/python_packages/mlir_core"
+    }
+  }
+}

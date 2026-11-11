@@ -49,11 +49,15 @@ LOWERING = [
 def run(command: Sequence[str], environment: dict[str, str] | None = None) -> str:
     completed = subprocess.run(
         command,
-        check=True,
         text=True,
         capture_output=True,
         env=environment,
     )
+    if completed.returncode:
+        raise RuntimeError(
+            f"Command failed ({completed.returncode}): {list(command)!r}\n"
+            f"{completed.stderr}"
+        )
     return completed.stdout
 
 
@@ -66,12 +70,13 @@ def sample(command: Sequence[str], repetitions: int, environment: dict[str, str]
     return samples
 
 
-def summarize(samples: Sequence[float]) -> dict[str, float]:
+def summarize(samples: Sequence[float]) -> dict[str, float | list[float]]:
     ordered = sorted(samples)
     p95_index = max(0, math.ceil(0.95 * len(ordered)) - 1)
     return {
         "median_ms": statistics.median(ordered),
         "p95_ms": ordered[p95_index],
+        "samples_ms": list(samples),
     }
 
 
@@ -104,15 +109,18 @@ def main() -> None:
     parser.add_argument("--runtime-repetitions", type=int, default=20)
     parser.add_argument("-o", "--output", type=pathlib.Path)
     arguments = parser.parse_args()
+    if min(arguments.compile_repetitions, arguments.runtime_repetitions) < 1 or arguments.runtime_warmup < 0:
+        parser.error("repetitions must be positive and warmup must be nonnegative")
     source_root = arguments.source_root.resolve()
     build_root = (arguments.build_root or source_root / "build").resolve()
     optimizer = build_root / "bin/buddygraph-opt"
     runner = arguments.llvm_tools.resolve() / "mlir-runner"
+    # Use the active interpreter's dependencies and source scripts/env.sh first.
+    # The legacy .deps directory may contain extensions for a different Python ABI.
     python_path = os.pathsep.join(
         [
-            str(source_root / ".deps"),
-            str(arguments.llvm_tools.resolve().parent / "tools/mlir/python_packages/mlir_core"),
             os.environ.get("PYTHONPATH", ""),
+            str(arguments.llvm_tools.resolve().parent / "tools/mlir/python_packages/mlir_core"),
         ]
     )
     environment = dict(os.environ, PYTHONPATH=python_path)
@@ -186,8 +194,8 @@ def main() -> None:
                 "static_alloc_bytes": static_alloc_bytes(buffer),
             }
 
-        runtime: dict[str, dict[str, float]] = {}
-        pipeline_compile: dict[str, dict[str, float]] = {}
+        runtime: dict[str, dict[str, float | list[float]]] = {}
+        pipeline_compile: dict[str, dict[str, float | list[float]]] = {}
         for name, profile in PROFILES.items():
             executable = temp / f"{name}.llvm.mlir"
             compile_command = [str(optimizer), *profile, *LOWERING, str(imported), "-o", str(executable)]
@@ -209,6 +217,8 @@ def main() -> None:
                 "platform": platform.platform(),
                 "processor": platform.processor() or "not reported by Python",
                 "python": platform.python_version(),
+                "cpu_affinity": sorted(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else None,
+                "optimizer_version": run([str(optimizer), "--version"]).strip(),
                 "optimizer": str(optimizer),
                 "model": "elementwise_constant.onnx",
                 "input_shape": [1, 1, 2, 2],

@@ -58,7 +58,7 @@ FailureOr<Value> emitScalar(Operation *operation, const ElementwiseTree &tree,
     if (failed(input))
       return failure();
     auto zero = rewriter.create<arith::ConstantFloatOp>(
-        operation->getLoc(), APFloat(0.0f), rewriter.getF32Type());
+        operation->getLoc(), rewriter.getF32Type(), APFloat(0.0f));
     return rewriter.create<arith::MaximumFOp>(operation->getLoc(), *input, zero)
         .getResult();
   }
@@ -68,9 +68,9 @@ FailureOr<Value> emitScalar(Operation *operation, const ElementwiseTree &tree,
     if (failed(input))
       return failure();
     Value minimum = rewriter.create<arith::ConstantFloatOp>(
-        operation->getLoc(), clamp.getMinValue(), rewriter.getF32Type());
+        operation->getLoc(), rewriter.getF32Type(), clamp.getMinValue());
     Value maximum = rewriter.create<arith::ConstantFloatOp>(
-        operation->getLoc(), clamp.getMaxValue(), rewriter.getF32Type());
+        operation->getLoc(), rewriter.getF32Type(), clamp.getMaxValue());
     Value below = rewriter.create<arith::CmpFOp>(
         operation->getLoc(), arith::CmpFPredicate::OLT, *input, minimum);
     Value lowerClamped = rewriter.create<arith::SelectOp>(
@@ -170,7 +170,7 @@ public:
              FuseElementwisePattern<ReluOp>, FuseElementwisePattern<ClampOp>>(
             &getContext());
     GreedyRewriteConfig config;
-    config.useTopDownTraversal = true;
+    config.setUseTopDownTraversal(true);
     if (failed(
             applyPatternsGreedily(getOperation(), std::move(patterns), config)))
       signalPassFailure();

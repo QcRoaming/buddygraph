@@ -11,6 +11,11 @@ std::unique_ptr<mlir::Pass> createInferShapesPass();
 std::unique_ptr<mlir::Pass> createFoldBatchNormIntoConvPass();
 std::unique_ptr<mlir::Pass> createFuseElementwisePass();
 std::unique_ptr<mlir::Pass> createConvertBGraphToLinalgPass();
+std::unique_ptr<mlir::Pass> createVectorizeConvPass();
+void registerCPUPipelines();
+
+#define GEN_PASS_DECL
+#include "BuddyGraph/Transforms/Passes.h.inc"
 
 #define GEN_PASS_REGISTRATION
 #include "BuddyGraph/Transforms/Passes.h.inc"

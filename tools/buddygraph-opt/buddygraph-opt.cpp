@@ -8,6 +8,7 @@
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/ControlFlow/Transforms/BufferizableOpInterfaceImpl.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
@@ -26,6 +27,7 @@
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
   buddy::bgraph::registerPasses();
+  buddy::bgraph::registerCPUPipelines();
 
   mlir::DialectRegistry registry;
   registry.insert<buddy::bgraph::BGraphDialect, mlir::affine::AffineDialect,
@@ -37,6 +39,7 @@ int main(int argc, char **argv) {
                   mlir::scf::SCFDialect, mlir::tensor::TensorDialect,
                   mlir::vector::VectorDialect>();
   mlir::arith::registerBufferizableOpInterfaceExternalModels(registry);
+  mlir::func::registerInlinerExtension(registry);
   mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
       registry);
   mlir::cf::registerBufferizableOpInterfaceExternalModels(registry);

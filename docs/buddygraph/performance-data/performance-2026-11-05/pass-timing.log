@@ -1,0 +1,16 @@
+===-------------------------------------------------------------------------===
+                         ... Execution time report ...
+===-------------------------------------------------------------------------===
+  Total Execution Time: 0.0039 seconds
+
+  ----Wall Time----  ----Name----
+    0.0023 ( 58.8%)  Parser
+    0.0001 (  3.1%)  BGraphFoldBatchNormIntoConv
+    0.0000 (  1.0%)  Canonicalizer
+    0.0000 (  0.5%)  CSE
+    0.0000 (  0.0%)    (A) DominanceInfo
+    0.0001 (  2.2%)  BGraphFuseElementwise
+    0.0003 (  8.1%)  ConvertBGraphToLinalg
+    0.0002 (  5.4%)  Output
+    0.0008 ( 20.9%)  Rest
+    0.0039 (100.0%)  Total

@@ -5,6 +5,7 @@ config.buddygraph_obj_root = "@BUDDYGRAPH_BINARY_DIR@"
 config.buddygraph_source_root = "@BUDDYGRAPH_SOURCE_DIR@"
 config.llvm_build_root = "@LLVM_BUILD_BINARY_DIR@"
 config.python_executable = "@Python3_EXECUTABLE@"
+config.mlir_python_dir = "@BUDDYGRAPH_MLIR_PYTHON_DIR@"
 
 import lit.llvm
 lit.llvm.initialize(lit_config, config)

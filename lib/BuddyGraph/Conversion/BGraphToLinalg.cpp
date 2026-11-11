@@ -106,7 +106,7 @@ public:
         op.getLoc(), resultType, adaptor.getOperands(), rewriter,
         [&](OpBuilder &builder, Location location, ValueRange arguments) {
           Value zero = builder.create<arith::ConstantFloatOp>(
-              location, APFloat(0.0f), builder.getF32Type());
+              location, builder.getF32Type(), APFloat(0.0f));
           return builder.create<arith::MaximumFOp>(location, arguments[0], zero)
               .getResult();
         });
@@ -129,9 +129,9 @@ public:
         op.getLoc(), resultType, adaptor.getOperands(), rewriter,
         [&](OpBuilder &builder, Location location, ValueRange arguments) {
           Value minimum = builder.create<arith::ConstantFloatOp>(
-              location, op.getMinValue(), builder.getF32Type());
+              location, builder.getF32Type(), op.getMinValue());
           Value maximum = builder.create<arith::ConstantFloatOp>(
-              location, op.getMaxValue(), builder.getF32Type());
+              location, builder.getF32Type(), op.getMaxValue());
           Value below = builder.create<arith::CmpFOp>(
               location, arith::CmpFPredicate::OLT, arguments[0], minimum);
           Value lowerClamped = builder.create<arith::SelectOp>(
@@ -239,7 +239,7 @@ public:
     Value empty = rewriter.create<tensor::EmptyOp>(
         op.getLoc(), resultType.getShape(), resultType.getElementType());
     Value zero = rewriter.create<arith::ConstantFloatOp>(
-        op.getLoc(), APFloat(0.0f), rewriter.getF32Type());
+        op.getLoc(), rewriter.getF32Type(), APFloat(0.0f));
     Value initialized =
         rewriter.create<linalg::FillOp>(op.getLoc(), zero, empty).result();
 
@@ -275,8 +275,8 @@ public:
         [elementCount](OpBuilder &builder, Location location,
                        ValueRange arguments) {
           Value divisor = builder.create<arith::ConstantFloatOp>(
-              location, APFloat(static_cast<float>(elementCount)),
-              builder.getF32Type());
+              location, builder.getF32Type(),
+              APFloat(static_cast<float>(elementCount)));
           return builder.create<arith::DivFOp>(location, arguments[0], divisor)
               .getResult();
         });
@@ -315,9 +315,8 @@ public:
           Value centered = builder.create<arith::SubFOp>(location, arguments[0],
                                                          arguments[3]);
           Value epsilon = builder.create<arith::ConstantFloatOp>(
-              location,
-              APFloat(static_cast<float>(op.getEpsilon().convertToDouble())),
-              builder.getF32Type());
+              location, builder.getF32Type(),
+              APFloat(static_cast<float>(op.getEpsilon().convertToDouble())));
           Value variance =
               builder.create<arith::AddFOp>(location, arguments[4], epsilon);
           Value denominator = builder.create<math::SqrtOp>(location, variance);
@@ -350,8 +349,8 @@ Value applyPadding(Location location, Value input, ArrayRef<int64_t> pads,
   low[widthAxis] = rewriter.getIndexAttr(pads[1]);
   high[heightAxis] = rewriter.getIndexAttr(pads[2]);
   high[widthAxis] = rewriter.getIndexAttr(pads[3]);
-  Value zero = rewriter.create<arith::ConstantFloatOp>(location, APFloat(0.0f),
-                                                       rewriter.getF32Type());
+  Value zero = rewriter.create<arith::ConstantFloatOp>(
+      location, rewriter.getF32Type(), APFloat(0.0f));
   return rewriter.create<tensor::PadOp>(
       location, RankedTensorType::get(paddedShape, inputType.getElementType()),
       input, low, high, zero);
@@ -382,7 +381,7 @@ public:
     Value initialized;
     if (adaptor.getBias().empty()) {
       Value zero = rewriter.create<arith::ConstantFloatOp>(
-          op.getLoc(), APFloat(0.0f), rewriter.getF32Type());
+          op.getLoc(), rewriter.getF32Type(), APFloat(0.0f));
       initialized =
           rewriter.create<linalg::FillOp>(op.getLoc(), zero, empty).result();
     } else {
